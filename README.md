@@ -5,20 +5,15 @@
 
 > Tool for uploading massive data into OpenStack Object Storage
 
-TODO: Fill out this long description.
+This utility is an example of using the [swiftlygo pipeline api](https://github.com/ibmjstart/swiftlygo) to build a data uploader for
+OpenStack Object Storage.
 
 ## Table of Contents
 
-- [Background](#background)
 - [Install](#install)
 - [Usage](#usage)
 - [Contribute](#contribute)
 - [License](#license)
-
-## Background
-
-This utility is an example of using the [swiftlygo pipeline api](https://github.com/ibmjstart/swiftlygo) to build a data uploader for
-OpenStack Object Storage.
 
 ## Install
 
