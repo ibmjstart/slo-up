@@ -58,13 +58,13 @@ func main() {
 		serversideChunks     []string
 	)
 	defer handleExit() // prep exit handler
-	flag.StringVar(&userName, "user", "", "`username` from vcap.json")
-	flag.StringVar(&apiKey, "p", "", "`password` from vcap.json")
-	flag.StringVar(&authURL, "url", "", "`auth_url` from vcap.json. IMPORTANT: Append \"/vX\" to the end of this URL where X is your swift authentication version")
-	flag.StringVar(&domain, "d", "", "[auth v3 only] `domainName` from vcap.json")
+	flag.StringVar(&userName, "user", "", "`username` from OpenStack Object Storage credentials")
+	flag.StringVar(&apiKey, "p", "", "`password` from OpenStack Object Storage credentials")
+	flag.StringVar(&authURL, "url", "", "`auth_url` from OpenStack Object Storage credentials. IMPORTANT: Append \"/vX\" to the end of this URL where X is your swift authentication version")
+	flag.StringVar(&domain, "d", "", "[auth v3 only] `domainName` from OpenStack Object Storage credentials")
 	flag.StringVar(&container, "c", "", "`name` of the container in object storage in which you want to store the data")
 	flag.StringVar(&objectName, "o", "", "`name` of the object in object storage in which you want to store the data")
-	flag.StringVar(&tenant, "t", "", "[auth v2 only] `name` of the tenant from vcap.json")
+	flag.StringVar(&tenant, "t", "", "[auth v2 only] `name` from OpenStack Object Storage credentials")
 	flag.StringVar(&path, "f", "", "the `path` to the local file being uploaded")
 	flag.StringVar(&excludedChunks, "e", "", "[optional] `comma-separated-list` (no spaces) of chunks to skip uploading. WARNING: This WILL cause SLO Manifest Uploads to fail.")
 	flag.StringVar(&hashFile, "h", "", "[optional] `filename` of a hash json file saved by this utility on a previous run. This can shortcut hashing data.")
