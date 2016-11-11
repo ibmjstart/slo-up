@@ -9,6 +9,7 @@ import (
 	"github.com/ibmjstart/swiftlygo/slo"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -53,6 +54,7 @@ func main() {
 		container, objectName,
 		hashFile, excludedChunks string
 		chunkSize            uint
+		maxUploads           int
 		hashesOut, hashes    map[string]string
 		onlyMissing, noColor bool
 		serversideChunks     []string
@@ -69,6 +71,7 @@ func main() {
 	flag.StringVar(&excludedChunks, "e", "", "[optional] `comma-separated-list` (no spaces) of chunks to skip uploading. WARNING: This WILL cause SLO Manifest Uploads to fail.")
 	flag.StringVar(&hashFile, "h", "", "[optional] `filename` of a hash json file saved by this utility on a previous run. This can shortcut hashing data.")
 	flag.UintVar(&chunkSize, "z", 1e9, "the `size` of each file chunk being uploaded")
+	flag.IntVar(&maxUploads, "j", runtime.NumCPU(), "the number of parallel uploads that you want, at maximum.")
 	flag.BoolVar(&onlyMissing, "only-missing", false, "only upload file chunks that are not already in object storage (uses name matching)")
 	flag.BoolVar(&noColor, "no-color", false, "disable colorization on output (also disables ANSI line clearing)")
 	flag.Parse()
@@ -222,7 +225,12 @@ func main() {
 	})
 
 	// Perform upload
-	chunks = slo.UploadData(chunks, errors, connection, time.Second)
+	uploadStreams := slo.Divide(chunks, uint(maxUploads))
+	doneStreams := make([]<-chan slo.FileChunk, maxUploads)
+	for index, stream := range uploadStreams {
+		doneStreams[index] = slo.UploadData(stream, errors, connection, time.Second)
+	}
+	chunks = slo.Join(doneStreams...)
 	chunks = slo.Map(chunks, errors, func(chunk slo.FileChunk) (slo.FileChunk, error) {
 		chunk.Data = nil // Discard data to allow it to be garbage-collected
 		return chunk, nil
