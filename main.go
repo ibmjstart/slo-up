@@ -184,8 +184,8 @@ func main() {
 	///////////////////////
 	errors := make(chan error, 100)
 	chunks, numberChunks := slo.BuildChunks(uint(info.Size()), chunkSize)
-	chunks = slo.ObjectNamer(chunks, objectName+"-chunk-%04[1]d-size-%[2]d")
-	chunks = slo.Containerizer(chunks, container)
+	chunks = slo.ObjectNamer(chunks, errors, objectName+"-chunk-%04[1]d-size-%[2]d")
+	chunks = slo.Containerizer(chunks, errors, container)
 	// Filter out excluded chunks before reading and hashing data
 	excluded, chunks := slo.Separate(chunks, errors, func(chunk slo.FileChunk) (bool, error) {
 		for _, chunkNumber := range excludedChunkNumber {
@@ -241,15 +241,15 @@ func main() {
 	chunks = slo.Join(chunks, noupload, excluded)
 	// Build manifest layer 1
 	manifests := slo.ManifestBuilder(chunks, errors)
-	manifests = slo.ObjectNamer(manifests, objectName+"-manifest-%04[1]d")
-	manifests = slo.Containerizer(manifests, container)
+	manifests = slo.ObjectNamer(manifests, errors, objectName+"-manifest-%04[1]d")
+	manifests = slo.Containerizer(manifests, errors, container)
 	// Upload manifest layer 1
 	manifests = slo.Map(manifests, errors, printManifest)
 	manifests = slo.UploadManifests(manifests, errors, connection)
 	// Build top-level manifest out of layer 1
 	topManifests := slo.ManifestBuilder(manifests, errors)
-	topManifests = slo.ObjectNamer(topManifests, objectName)
-	topManifests = slo.Containerizer(topManifests, container)
+	topManifests = slo.ObjectNamer(topManifests, errors, objectName)
+	topManifests = slo.Containerizer(topManifests, errors, container)
 	// Upload top-level manifest
 	topManifests = slo.Map(topManifests, errors, printManifest)
 	topManifests = slo.UploadManifests(topManifests, errors, connection)
