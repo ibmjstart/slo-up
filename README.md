@@ -59,8 +59,8 @@ The other flags exist to provide upload options:
  - `-f <path>` The local file that you are uploading.
  - `-z size` Optionally choose the size of each chunk of your file. Defaults to 10^9 bytes.
  - `-e <comma-separated-list>` Optional list of chunk numbers to skip reading. Useful if some file sections are unreadable due to hard drive failure.
- - `-h <hash-file-name>` Optional name of hash file written by a previous run of this utility. Providing this allows the uploader to skip some expensive computation on a second run.
  - `-only-missing` Optional flag that causes uploader to only upload chunks that are not already in object storage. This is determined by checking the names of existing file chunks, and can have false positives (though it's unlikely unless you follow the `slo-up` file chunk naming convention).
+ - `-memprof` Enables memory profiling for the upload. Useful mainly for debugging.
  - `-no-color` Optionally turns off the fancy colorized output and disables ANSI redrawing.
  - `-help` Prints usage info and exits.
 
