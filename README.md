@@ -23,6 +23,31 @@ go get github.com/ibmjstart/slo-up
 
 ## Usage
 
+### Upload to IBM Bluemix
+
+`slo-up` makes it easy to upload data into the Object Storage service on Bluemix. Navigate to the Object Storage instanct that you would like to use in the Bluemix web user interface and find the "Service Credentials" for your Object Storage instance. It should look like this:
+
+```json
+{
+  "auth_url": "https://identity.open.softlayer.com",
+  "project": "project_string",
+  "projectId": "project_id",
+  "region": "dallas",
+  "userId": "user_id",
+  "username": "user_name",
+  "password": "password",
+  "domainId": "domain_id",
+  "domainName": "domain_name",
+  "role": "admin"
+}
+```
+
+To upload a local file to a container (called `container_name`) in this object store with an SLO named `object_name`, you would invoke `slo-up` as follows:
+```
+slo-up -url https://identity.open.softlayer.com/v3 -user user_name -p password -d domain_name -c container_name -o object_name -f path/to/local/file
+```
+Note that we had to append `/v3` to the authentication URL.
+
 ### Authentication Flags
 
 The flags that you need to give `slo-up` vary with the authentication version of the Object Storage instance that you're trying to
