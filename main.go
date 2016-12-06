@@ -270,6 +270,11 @@ func main() {
 
 	// Print the upload counts as they come in
 	go func(totalChunks, fileSize uint, uploadCounts <-chan slo.Count) {
+		fmt.Println("The upload is starting. A status message " +
+			"will be printed after each chunk is uploaded.\n" +
+			"This can take some time. The time remaining and " +
+			"transfer rates are rough estimates\nthat " +
+			"grow more accurate as the upload progresses.")
 		var (
 			uploadCount               slo.Count
 			uploadPercent, uploadRate float64
