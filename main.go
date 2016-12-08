@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/ibmjstart/swiftlygo/auth"
-	"github.com/ibmjstart/swiftlygo/slo"
+	"github.com/ibmjstart/swiftlygo/pipeline"
 	"github.com/ncw/swift"
 	"github.com/pkg/profile"
 	"os"
@@ -163,7 +163,7 @@ func main() {
 	}
 
 	// Define a function to associate hashes with their chunks
-	hashAssociate := func(chunk slo.FileChunk) (slo.FileChunk, error) {
+	hashAssociate := func(chunk pipeline.FileChunk) (pipeline.FileChunk, error) {
 		for _, serverObject := range serversideChunks {
 			if serverObject.Name == chunk.Object {
 				chunk.Hash = serverObject.Hash
@@ -173,7 +173,7 @@ func main() {
 		return chunk, nil
 	}
 	// Define a function that prints manifest names when the pass through
-	printManifest := func(chunk slo.FileChunk) (slo.FileChunk, error) {
+	printManifest := func(chunk pipeline.FileChunk) (pipeline.FileChunk, error) {
 		fmt.Printf(Cyan("Uploading manifest: %s\n", chunk.Path()))
 		return chunk, nil
 	}
@@ -182,13 +182,13 @@ func main() {
 	///////////////////////
 	errors := make(chan error)
 	fileSize := uint(info.Size())
-	chunks, numberChunks := slo.BuildChunks(fileSize, chunkSize)
-	chunks = slo.ObjectNamer(chunks, errors,
+	chunks, numberChunks := pipeline.BuildChunks(fileSize, chunkSize)
+	chunks = pipeline.ObjectNamer(chunks, errors,
 		objectName+"-chunk-%04[1]d-size-%[2]d")
-	chunks = slo.Containerizer(chunks, errors, container)
+	chunks = pipeline.Containerizer(chunks, errors, container)
 	// Filter out excluded chunks before reading and hashing data
-	excluded, chunks := slo.Separate(chunks, errors,
-		func(chunk slo.FileChunk) (bool, error) {
+	excluded, chunks := pipeline.Separate(chunks, errors,
+		func(chunk pipeline.FileChunk) (bool, error) {
 			for _, chunkNumber := range excludedChunkNumber {
 				if chunkNumber == chunk.Number {
 					return true, nil
@@ -197,8 +197,8 @@ func main() {
 			return false, nil
 		})
 	// Separate out chunks that should not be uploaded
-	noupload, chunks := slo.Separate(chunks, errors,
-		func(chunk slo.FileChunk) (bool, error) {
+	noupload, chunks := pipeline.Separate(chunks, errors,
+		func(chunk pipeline.FileChunk) (bool, error) {
 			for _, serverObject := range serversideChunks {
 				if serverObject.Name == chunk.Object {
 					return true, nil
@@ -208,36 +208,36 @@ func main() {
 		})
 
 	// Handle finding hashes for nonuploaded chunks
-	uploadSkipped := slo.Join(excluded, noupload)
-	uploadSkipped = slo.Map(uploadSkipped, errors, hashAssociate)
+	uploadSkipped := pipeline.Join(excluded, noupload)
+	uploadSkipped = pipeline.Map(uploadSkipped, errors, hashAssociate)
 
 	// Perform upload
-	uploadStreams := slo.Divide(chunks, uint(maxUploads))
-	doneStreams := make([]<-chan slo.FileChunk, maxUploads)
+	uploadStreams := pipeline.Divide(chunks, uint(maxUploads))
+	doneStreams := make([]<-chan pipeline.FileChunk, maxUploads)
 	for index, stream := range uploadStreams {
-		doneStreams[index] = slo.ReadHashAndUpload(stream, errors,
+		doneStreams[index] = pipeline.ReadHashAndUpload(stream, errors,
 			file, connection)
 	}
-	chunks = slo.Join(doneStreams...)
-	chunks, uploadCounts := slo.Counter(chunks)
+	chunks = pipeline.Join(doneStreams...)
+	chunks, uploadCounts := pipeline.Counter(chunks)
 
 	// Bring all of the chunks back together
-	chunks = slo.Join(chunks, uploadSkipped)
+	chunks = pipeline.Join(chunks, uploadSkipped)
 	// Build manifest layer 1
-	manifests := slo.ManifestBuilder(chunks, errors)
-	manifests = slo.ObjectNamer(manifests, errors,
+	manifests := pipeline.ManifestBuilder(chunks, errors)
+	manifests = pipeline.ObjectNamer(manifests, errors,
 		objectName+"-manifest-%04[1]d")
-	manifests = slo.Containerizer(manifests, errors, container)
+	manifests = pipeline.Containerizer(manifests, errors, container)
 	// Upload manifest layer 1
-	manifests = slo.Map(manifests, errors, printManifest)
-	manifests = slo.UploadManifests(manifests, errors, connection)
+	manifests = pipeline.Map(manifests, errors, printManifest)
+	manifests = pipeline.UploadManifests(manifests, errors, connection)
 	// Build top-level manifest out of layer 1
-	topManifests := slo.ManifestBuilder(manifests, errors)
-	topManifests = slo.ObjectNamer(topManifests, errors, objectName)
-	topManifests = slo.Containerizer(topManifests, errors, container)
+	topManifests := pipeline.ManifestBuilder(manifests, errors)
+	topManifests = pipeline.ObjectNamer(topManifests, errors, objectName)
+	topManifests = pipeline.Containerizer(topManifests, errors, container)
 	// Upload top-level manifest
-	topManifests = slo.Map(topManifests, errors, printManifest)
-	topManifests = slo.UploadManifests(topManifests, errors, connection)
+	topManifests = pipeline.Map(topManifests, errors, printManifest)
+	topManifests = pipeline.UploadManifests(topManifests, errors, connection)
 
 	//////////////////////////
 	// Process Pipeline Output
@@ -269,14 +269,14 @@ func main() {
 	}()
 
 	// Print the upload counts as they come in
-	go func(totalChunks, fileSize uint, uploadCounts <-chan slo.Count) {
+	go func(totalChunks, fileSize uint, uploadCounts <-chan pipeline.Count) {
 		fmt.Println("The upload is starting. A status message " +
 			"will be printed after each chunk is uploaded.\n" +
 			"This can take some time. The time remaining and " +
 			"transfer rates are rough estimates\nthat " +
 			"grow more accurate as the upload progresses.")
 		var (
-			uploadCount               slo.Count
+			uploadCount               pipeline.Count
 			uploadPercent, uploadRate float64
 			timeRemaining             time.Duration
 		)
